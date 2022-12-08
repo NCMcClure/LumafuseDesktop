@@ -1,0 +1,29 @@
+{
+	"FileVersion": 3,
+	"Version": 4,
+	"VersionName": "1.3",
+	"FriendlyName": "ScreenCapPlayer",
+	"Description": "Add a media player to capture and play one of the screens",
+	"Category": "Media Players",
+	"CreatedBy": "Antoine Reversat",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/product/38b887ee46ef471ebdb93d8cfb2ad96a",
+	"SupportURL": "",
+	"EngineVersion": "4.27.0",
+	"CanContainContent": false,
+	"Installed": true,
+	"SupportedTargetPlatforms": [
+		"Win64"
+	],
+	"Modules": [
+		{
+			"Name": "ScreenCapPlayer",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"WhitelistPlatforms": [
+				"Win64"
+			]
+		}
+	]
+}

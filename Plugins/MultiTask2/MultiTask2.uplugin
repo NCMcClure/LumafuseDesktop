@@ -1,0 +1,41 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "2.1.3",
+	"FriendlyName": "Multi Task 2",
+	"Description": "Multi Task 2 enables multi-threading in Blueprints in the fastest, cleanest and the most efficient way.",
+	"Category": "Multi-Threading",
+	"CreatedBy": "xDedic",
+	"CreatedByURL": "",
+	"DocsURL": "https://www.puglifestudio.com/multitask2doc",
+	"MarketplaceURL": "",
+	"SupportURL": "https://discord.yakistudios.com",
+	"EngineVersion": "4.27.0",
+	"CanContainContent": false,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "MultiTask2",
+			"Type": "Runtime",
+			"LoadingPhase": "PreDefault",
+			"WhitelistPlatforms": [
+				"Win64",
+				"Win32",
+				"Android",
+				"XboxOne",
+				"PS4",
+				"Linux"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "ProceduralMeshComponent",
+			"Enabled": true
+		},
+		{
+			"Name": "GeometryProcessing",
+			"Enabled": true
+		}
+	]
+}
