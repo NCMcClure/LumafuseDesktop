@@ -7,8 +7,9 @@ public class LumafuseDesktop : ModuleRules
 	public LumafuseDesktop(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+		//bEnableExceptions = true;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "LowEntryExtendedStandardLibrary","LowEntryCompression", "SocketServer"});
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore","RHI", "RenderCore","LowEntryExtendedStandardLibrary","LowEntryCompression", "SocketServer"});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "DatasmithCore"});
 

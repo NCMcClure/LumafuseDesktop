@@ -7,37 +7,8 @@
 #include "LowEntryExtendedStandardLibrary/Public/Classes/LowEntryExtendedStandardLibrary.h"
 #include "LowEntryCompression/Public/Classes/LowEntryCompressionLibrary.h"
 
-void ULumafuseStreamingUtilities::BuildFrameDataChunk(uint8 frameID, int32 splitSize, int32 chunkIndex,
-	const TArray<uint8>& bufferChunk, TArray<FLumafuseFramePacket>& frameData)
-{
-	//Initialize loop parameters to ensure that the frame data gets constructed properly
-	const int32 bufferChunkSize = bufferChunk.Num();
-	const int32 firstIndex = chunkIndex * (bufferChunkSize / splitSize);
-	const int32 lastIndex = firstIndex + (bufferChunkSize / splitSize);
 
-	//Initializing increment index used for getting the byte sub array from the pixel buffer chunk
-	int32 chunkSubArrayIndex = 0;
-
-	//Looping through the pixel buffer chunk to pull out sub arrays and add them to the frame data
-	for (int i = firstIndex; i <  lastIndex; i++)
-	{
-		FLumafuseFramePacket tempFramePacket;
-		tempFramePacket.frameID = frameID;
-		tempFramePacket.index = chunkSubArrayIndex;
-
-		//Efficiently extract byte sub array from the pixel buffer chunk
-		tempFramePacket.pixelPacket = ULowEntryExtendedStandardLibrary::BytesSubArray(bufferChunk, chunkSubArrayIndex, splitSize);
-
-		//Add frame packet struct to the frame data array
-		frameData.Add(tempFramePacket);
-		
-		//Increment the index that's used to determine the starting index for the new pixel buffer packet
-		chunkSubArrayIndex += splitSize;
-	}
-	
-}
-
-//Optimize And Send Frame Chunk Packets
+//Distill Chunk Packets and Send To Client
 
 // Looping through the frame buffer data chunk to:
 // 1) Trim the alpha channels from the pixel buffer chunk to reduce packet size - these channels will get
@@ -53,13 +24,70 @@ void ULumafuseStreamingUtilities::BuildFrameDataChunk(uint8 frameID, int32 split
 //    [0] DisplayID (uint8)
 //    [1] FrameID (uint8)
 //    [2-5] ChunkIndex (int32->TArray<uint8> of size 4)
-//    [6-9] PayloadSize (int32->TArray<uint8> of size 4)
+//    [6-9] ChunkSubArrayIndex (int32->TArray<uint8> of size 4)
+//    [10-13] PayloadSize (int32->TArray<uint8> of size 4)
 //   ]
 //   Payload
 //   [
-//    [10...] Compressed PixelPacket (TArray<uint8>)
+//    [14...] Compressed PixelPacket (TArray<uint8>)
 //   ]
 // }
+
+void ULumafuseStreamingUtilities::DistillChunkPacketsAndSendToClient(uint8 DisplayID, uint8 FrameID, int32 SplitSize,
+	int32 ChunkIndex, const TArray<uint8>& BufferChunk, USocketServerBPLibrary* ServerTarget,
+	FString ClientSessionID, FString OptionalServerID)
+{
+	//Initialize loop parameters to ensure that the frame data gets constructed properly
+	const int32 bufferChunkSize = BufferChunk.Num();
+	const int32 firstIndex = ChunkIndex * (bufferChunkSize / SplitSize);
+	const int32 lastIndex = firstIndex + (bufferChunkSize / SplitSize);
+
+	//Initializing increment index used for getting the byte sub array from the pixel buffer chunk
+	int32 ChunkSubArrayIndex = 0;
+
+	//Create an empty string to use as input when sending data to the client since we are only sending bytes
+	const FString MessageToSend = "";
+
+	//Looping through the pixel buffer chunk to pull out sub arrays, optimize them, and send them to the client as byte packets
+	for (int i = firstIndex; i <  lastIndex; i++)
+	{
+		//Header for the frame data
+		TArray<uint8> TotalPacket;
+		TotalPacket.Add(DisplayID);
+		TotalPacket.Add(FrameID);
+		TotalPacket.Append(ULowEntryExtendedStandardLibrary::IntegerToBytes(ChunkIndex));
+		TotalPacket.Append(ULowEntryExtendedStandardLibrary::IntegerToBytes(ChunkSubArrayIndex));
+
+		//Payload
+
+		//Efficiently extract byte sub array from the pixel buffer chunk, trim the alpha, and compress it
+		TArray<uint8> TrimmedPixelPacket;
+		TArray<uint8> PixelPacket = ULowEntryExtendedStandardLibrary::BytesSubArray(BufferChunk, ChunkSubArrayIndex, SplitSize);
+		TrimAlphaFromPacket(PixelPacket, TrimmedPixelPacket);
+		
+		//Clear the original pixel packet to save memory
+		PixelPacket.Empty();
+
+		//Compress the trimmed pixel packet to prep it for sending
+		TArray<uint8> CompressedPixelPacket = ULowEntryCompressionLibrary::CompressLzfThreadSafe(TrimmedPixelPacket);
+
+		//Add payload size to packet header
+		TotalPacket.Append(ULowEntryExtendedStandardLibrary::IntegerToBytes(CompressedPixelPacket.Num()));
+
+		//Clear Trimmed pixel packet to save memory since we already added it to the total packet
+		TrimmedPixelPacket.Empty();
+
+		//Add payload to packet
+		TotalPacket.Append(CompressedPixelPacket);
+
+		//Send packet to client
+		ServerTarget->socketServerSendUDPMessageToClient(ClientSessionID, MessageToSend, TotalPacket,false, true, ESocketServerUDPSocketType::E_SSS_CLIENT, OptionalServerID);
+		
+		//Increment the index that's used to determine the starting index for the new pixel buffer packet
+		ChunkSubArrayIndex += SplitSize;
+	}
+	
+}
 
 void ULumafuseStreamingUtilities::OptimizeAndSendFrameChunkPackets(const TArray<FLumafuseFramePacket>& frameBufferDataChunk, USocketServerBPLibrary* serverTarget, FString clientSessionID, FString messageToSend, FString optionalServerID)
 {
@@ -98,3 +126,20 @@ void ULumafuseStreamingUtilities::OptimizeAndSendFrameChunkPackets(const TArray<
 	}
 
 }
+
+void ULumafuseStreamingUtilities::TrimAlphaFromPacket(const TArray<uint8>& OriginalPacket,
+	TArray<uint8>& TrimmedPacket)
+{
+	for (int alphaIndex = 0; alphaIndex < OriginalPacket.Num(); alphaIndex += 4)
+	{
+		TArray<uint8> byteArrayToAppend = ULowEntryExtendedStandardLibrary::BytesSubArray(OriginalPacket, alphaIndex, 3);
+		TrimmedPacket.Append(byteArrayToAppend.GetData(), 3);
+	}
+}
+
+
+
+
+
+
+

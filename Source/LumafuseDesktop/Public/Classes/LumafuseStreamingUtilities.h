@@ -6,7 +6,9 @@
 #include "LumafuseFramePacket.h"
 #include "SocketServerPluginUDPServer.h"
 #include "Kismet/BlueprintFunctionLibrary.h"
+#include "Math/IntRect.h"
 #include "LumafuseStreamingUtilities.generated.h"
+
 
 /**
  * 
@@ -16,12 +18,15 @@ class LUMAFUSEDESKTOP_API ULumafuseStreamingUtilities : public UBlueprintFunctio
 {
 	GENERATED_BODY()
 	UFUNCTION(BlueprintCallable, Category = "LumafuseStreamingUtilities|FrameDataConstruction")
-	static void BuildFrameDataChunk(uint8 frameID, int32 splitSize, int32 chunkIndex, const TArray<uint8>& bufferChunk,
-	                                UPARAM(ref)TArray<FLumafuseFramePacket>& frameData);
+	static void DistillChunkPacketsAndSendToClient(uint8 DisplayID, uint8 FrameID, int32 SplitSize, int32 ChunkIndex, const TArray<uint8>& BufferChunk, USocketServerBPLibrary* ServerTarget, FString ClientSessionID
+											, FString OptionalServerID);
 
 	UFUNCTION(BlueprintCallable, Category = "LumafuseStreamingUtilities|FrameDataConstruction")
 	static void OptimizeAndSendFrameChunkPackets(const TArray<FLumafuseFramePacket>& frameBufferDataChunk,
 	                                        USocketServerBPLibrary* serverTarget, FString clientSessionID,
 	                                        FString messageToSend, FString optionalServerID);
-	
+
+	//Write a new function that takes in a TArray of uint8s and removes every 4th element from the array
+	UFUNCTION(BlueprintCallable, Category = "LumafuseStreamingUtilities|FrameDataConstruction")
+	static void TrimAlphaFromPacket(const TArray<uint8>& OriginalPacket, UPARAM(ref)TArray<uint8>& TrimmedPacket);
 };

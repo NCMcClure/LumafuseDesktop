@@ -3,6 +3,7 @@
 #include "ScreenCapMediaTextureSample.h"
 #include "Async/Async.h"
 
+class UMediaTexture;
 DEFINE_LOG_CATEGORY(LogScreenCapMediaPlayer)
 
 BOOL EnumMonitorCallback(
@@ -525,3 +526,19 @@ void FScreenCapPlayer::DrawCursor()
 		}
 	}
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -2,8 +2,10 @@
 
 
 #include "LumafuseTextureUtilities.h"
-#include "Engine/Texture2D.h"
+#include "RenderingThread.h"
+#include "LowEntryCompressionLibrary.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "LowEntryExtendedStandardLibrary/Public/Classes/LowEntryExtendedStandardLibrary.h"
 #include "UnrealClient.h"
 
 ULumafuseTextureUtilities::ULumafuseTextureUtilities()
@@ -28,12 +30,11 @@ void ULumafuseTextureUtilities::UpdateTexture(UTexture2D* Texture, const TArray<
 	Texture->UpdateTextureRegions(0, 1, Region, SourcePitch * Texture->GetSizeX(), SourcePitch, (uint8*)PixelsBuffer.GetData());
 }
 
-void ULumafuseTextureUtilities::GetPixelBufferFromRenderTarget(UTextureRenderTarget2D* TextureRenderTarget, TArray<uint8>& Buffer)
-{
-	TArray<FColor> SurfData;
-	FRenderTarget* RenderTarget = TextureRenderTarget->GameThread_GetRenderTargetResource();
-	RenderTarget->ReadPixels(SurfData);
 
-	FMemory::Memcpy(Buffer.GetData(), SurfData.GetData(), Buffer.Num());
-}
+
+
+
+
+
+
 
