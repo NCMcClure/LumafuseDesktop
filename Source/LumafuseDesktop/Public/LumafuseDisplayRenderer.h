@@ -30,18 +30,10 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void CopyTextureQuadrant(const FTexture2DRHIRef& SourceTexture, FTexture2DRHIRef& DestinationTexture, FIntPoint QuadrantPosition);
-
-	UFUNCTION(BlueprintCallable, Category = "Lumafuse")
-	void GetQuadrantPixelBufferFromRenderTargetThreadSafe(UTextureRenderTarget2D* TextureRenderTarget, FIntPoint QuadrantPosition,UPARAM(ref)TArray<uint8>& Buffer, int32 CompressionQuality);
-
-	//Flushes render commands. This should only ever be called on the Game Thread, otherwise the engine will crash.
 	UFUNCTION(BlueprintCallable, Category = "Lumafuse")
 	void FlushRenderThreadCommands()
 	{
 		FlushRenderingCommands();
 	}
 	
-	void CompressPixelsToBuffer(TArray<FColor>& SurfaceData, TArray<uint8>& Buffer, int32 SizeX, int32 SizeY, int32 CompressionQuality);
-
 };
