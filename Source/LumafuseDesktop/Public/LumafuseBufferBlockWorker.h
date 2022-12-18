@@ -34,7 +34,7 @@ class LUMAFUSEDESKTOP_API ULumafuseBufferBlockWorker : public UMultiThreadTask
 	void CompressPixelsToBuffer(TArray<FColor>& SurfaceData, TArray<uint8>& Buffer, int32 SizeX, int32 SizeY, int32 CompressionQuality);
 
 	UFUNCTION(BlueprintCallable, Category = "Lumafuse | Networking | Display")
-	void SeparateAndSendBufferBlock(uint8 DisplayID, uint8 FrameID, FIntPoint BlockCoordinate, const TArray<uint8>& BufferBlock, USocketServerBPLibrary* ServerTarget, FString ClientSessionID
+	void SeparateAndSendBufferBlock(uint8 DisplayID, uint8 FrameID, FIntPoint BlockLayout, FIntPoint BlockCoordinate, const TArray<uint8>& BufferBlock, USocketServerBPLibrary* ServerTarget, FString ClientSessionID
 											, FString OptionalServerID);
 
 	UFUNCTION(BlueprintCallable, Category = "Lumafuse | Multithreading | Rendering")
@@ -42,5 +42,4 @@ class LUMAFUSEDESKTOP_API ULumafuseBufferBlockWorker : public UMultiThreadTask
 	{
 		FlushRenderingCommands(bFlushDeferredDeletes);
 	}
-	
 };

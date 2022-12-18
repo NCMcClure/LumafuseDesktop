@@ -173,35 +173,31 @@ void ULumafuseBufferBlockWorker::CompressPixelsToBuffer(TArray<FColor>& SurfaceD
 //   [
 //    [0] DisplayID (uint8)
 //    [1] FrameID (uint8)
-//    [2-9] BlockCoordinate (FIntPoint->TArray<uint8> of size 8)
-//    [10-13] PayloadIndex (int32->TArray<uint8> of size 4)
-//    [14-17] PayloadSize (int32->TArray<uint8> of size 4)
-//    [18] bIsLastPacketInBlock (uint8 | 0 = false, 1 = true)
+//    [2-9] BlockLayout (FIntPoint->TArray<uint8> of size 8)
+//    [10-17] BlockCoordinate (FIntPoint->TArray<uint8> of size 8)
+//    [18-21] PayloadBlockIndex (int32->TArray<uint8> of size 4)
+//    [22-25] NumberOfBlockPackets (int32->TArray<uint8> of size 4)
 //   ]
 //   Payload
 //   [
-//    [19...] Compressed  (TArray<uint8>)
+//    [26...] BufferPacketPayload (TArray<uint8>)
 //   ]
 // }
 
-void ULumafuseBufferBlockWorker::SeparateAndSendBufferBlock(uint8 DisplayID, uint8 FrameID, FIntPoint BlockCoordinate,
+void ULumafuseBufferBlockWorker::SeparateAndSendBufferBlock(uint8 DisplayID, uint8 FrameID, FIntPoint BlockLayout, FIntPoint BlockCoordinate,
 	const TArray<uint8>& BufferBlock, USocketServerBPLibrary* ServerTarget, FString ClientSessionID,
 	FString OptionalServerID)
 {
 
 	constexpr int32 PacketSize = 4096;
-	int32 PayloadSize = PacketSize - 20; // 20 bytes is the size of the header
+	int32 PayloadSize = PacketSize - 27; // 27 bytes is the size of the header
 	
-	// Compressing the already JPEG compressed buffer block using lossless LZF.
-	// Varies between 0ms - 2ms added latency per block; Going to disable this for the time being since
-	// compression ratio (5% - 50%) isn't consistently high enough to justify the added latency 
-	
-	//const TArray<uint8> CompressedBlock = ULowEntryCompressionLibrary::CompressLzfThreadSafe(BufferBlock);
-
 	// Creating a blank string for the UDP Message
 	const FString MessageToSend = "";
 
-	uint8 bIsLastPacketInBlock = 0;
+	//Calculate the number of packets that will be sent, truncating the fractional part
+	const int32 NumberOfBlockPackets = FMath::TruncToInt(BufferBlock.Num() / PayloadSize);
+	
 
 	// Looping through the buffer block and sending out micro blocks in packets of size PacketSize
 	for (int32 PayloadIndex = 0; PayloadIndex < BufferBlock.Num(); PayloadIndex += PayloadSize)
@@ -211,26 +207,23 @@ void ULumafuseBufferBlockWorker::SeparateAndSendBufferBlock(uint8 DisplayID, uin
 		// Header (Will calculate payload size later)
 		TotalPacket.Add(DisplayID);
 		TotalPacket.Add(FrameID);
+		TotalPacket.Append(ULowEntryExtendedStandardLibrary::IntegerToBytes(BlockLayout.X));
+		TotalPacket.Append(ULowEntryExtendedStandardLibrary::IntegerToBytes(BlockLayout.Y));
 		TotalPacket.Append(ULowEntryExtendedStandardLibrary::IntegerToBytes(BlockCoordinate.X));
 		TotalPacket.Append(ULowEntryExtendedStandardLibrary::IntegerToBytes(BlockCoordinate.Y));
 		TotalPacket.Append(ULowEntryExtendedStandardLibrary::IntegerToBytes(PayloadIndex));
+		TotalPacket.Append(ULowEntryExtendedStandardLibrary::IntegerToBytes(NumberOfBlockPackets));
 
 		// Pulling out the payload from the buffer block
 		TArray<uint8> Payload = ULowEntryExtendedStandardLibrary::BytesSubArray(BufferBlock, PayloadIndex, PayloadSize);
 
-		// Appending the payload size to the header
-		TotalPacket.Append(ULowEntryExtendedStandardLibrary::IntegerToBytes(Payload.Num()));
-
 		// Appending the payload to the header
 		TotalPacket.Append(Payload);
-
-		TotalPacket.Add(bIsLastPacketInBlock);
 
 		// Checking to make sure the loop doesn't go out of bounds
 		if (PayloadIndex + PayloadSize > BufferBlock.Num())
 		{
 			PayloadSize = BufferBlock.Num() - PayloadIndex;
-			bIsLastPacketInBlock = 1;
 		}
 
 		// Sending the packet out to the client
